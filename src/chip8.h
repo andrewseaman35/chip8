@@ -28,6 +28,7 @@ private:
 
     void printRegisters();
     void printDisplay();
+    void printStack();
 
 public:
     uint8_t displayBuffer[64*32]; // "64x32-pixel monochrome display"

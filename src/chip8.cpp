@@ -69,9 +69,17 @@ void Chip8::printDisplay() {
 }
 
 void Chip8::printRegisters() {
-    cout << "printRegisters: ";
+    cout << "printRegisters: \n   ";
     for (int i = 0; i < 16; i++) {
         cout << to_string(V[i]) << " ";
+    }
+    cout << "\n";
+}
+
+void Chip8::printStack() {
+    cout << "printStack: \n   ";
+    for (int i = 0; i < 16; i++) {
+        cout << to_string(stack[i]) << " ";
     }
     cout << "\n";
 }
@@ -116,21 +124,26 @@ void Chip8::cycle() {
     // opcode is two bytes long and located at the program counter
     // shift the first byte by 8 and OR it with the following byte
     opcode = memory[pc] << 8 | memory[pc + 1];
-
     cout << "\nOPCODE: " << hex << opcode;
 
     // Decode Opcode
     switch(opcode & 0xF000) {
         case 0x0000:
-            switch(opcode & 0x00F0) {
+            switch(opcode & 0x00FF) {
                 case 0x00E0:
                     // 00E0 - CLS
                     // Clear the display.
+                    cout << " -- 00E0\n";
                     this->clearDisplay();
+                    pc += 2;
                     break;
                 case 0x00EE:
                     // 00EE - RET
                     // Return from a subroutine.
+                    cout << " -- 00EE\n";
+                    pc = stack[--sp];
+                    cout << "Removed from stack: " << to_string(pc) << "\n";
+                    pc += 2;
                     break;
                 case 0x00C0:
                     // 00Cn - SCD nibble (super chip-48)
@@ -155,8 +168,10 @@ void Chip8::cycle() {
                     }
                 default:
                     // 0nnn - SYS addr (unnecessary, I think?)
-                    break;
+                    cout << "Unhandled 0nnn instruction";
+                    throw "Unhandled 0nnn instruction";
             }
+            break;
         case 0x1000:
             // 1nnn - JP addr
             // Jump to location nnn.
@@ -167,10 +182,11 @@ void Chip8::cycle() {
         case 0x2000:
             // 2nnn - CALL addr
             // Call subroutine at nnn.
-            stack[sp] = pc;
-            sp += 1;
+            cout << " -- 2nnn\n";
+            stack[sp++] = pc;
+            cout << "Added to stack: " << to_string(pc) << "\n";
             pc = opcode & 0x0FFF;
-            cout << "Stack pointer: " << to_string(sp) << " ";
+            this->printStack();
             break;
         case 0x3000:
             // 3xkk - SE Vx, byte
@@ -207,36 +223,44 @@ void Chip8::cycle() {
             break;
         case 0x8000:
             switch(opcode & 0x000F) {
-                case 0x000:
+                case 0x0000:
                     // 8xy0 - LD Vx, Vy
+                    // Set Vx = Vy.
+                    cout << " -- 8xy0\n";
+                    V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
+                    pc += 2;
                     break;
-                case 0x001:
+                case 0x0001:
                     // 8xy1 - OR Vx, Vy
                     break;
-                case 0x002:
+                case 0x0002:
                     // 8xy2 - AND Vx, Vy
                     break;
-                case 0x003:
+                case 0x0003:
                     // 8xy3 - OR Vx, Vy
                     break;
-                case 0x004:
+                case 0x0004:
                     // 8xy4 - ADD Vx, Vy
                     break;
-                case 0x005:
+                case 0x0005:
                     // 8xy5 - SUB Vx, Vy
                     break;
-                case 0x006:
+                case 0x0006:
                     // 8xy6 - SHR Vx {, Vy}
                     break;
-                case 0x007:
+                case 0x0007:
                     // 8xy7 - SUBN Vy, Vy
                     break;
-                case 0x00E:
+                case 0x000E:
                     // 8xyE - SHL Vx {, Vy}
                     break;
             }
+            break;
         case 0x9000:
             // 9xy0 - SNE Vx, Vy
+            // Skip next instruction if Vx != Vy.
+            cout << " -- 9xy0\n";
+            pc += V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4] ? 4 : 2;
             break;
         case 0xA000:
             // Annn - LD I, addr
@@ -334,6 +358,7 @@ void Chip8::cycle() {
                     // Fx85 - LD Vx, R
                     break;
             }
+            break;
     }
 
     // Execute Opcode
