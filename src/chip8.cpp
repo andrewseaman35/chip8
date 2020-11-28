@@ -246,13 +246,14 @@ void Chip8::cycle() {
                 case 0x0003:
                     // 8xy3 - OR Vx, Vy
                     // Set Vx = Vx XOR Vy.
-                    cout << " -- 8xy2\n";
+                    cout << " -- 8xy3\n";
                     V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0004:
                     // 8xy4 - ADD Vx, Vy
                     // Set Vx = Vx + Vy, set VF = carry.
+                    cout << " -- 8xy4\n";
                     V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
                     V[0xF] = V[(opcode & 0x0F00) >> 8] > 0xFF ? 1 : 0;
                     pc += 2;
@@ -260,14 +261,21 @@ void Chip8::cycle() {
                 case 0x0005:
                     // 8xy5 - SUB Vx, Vy
                     // Set Vx = Vx - Vy, set VF = NOT borrow.
+                    cout << " -- 8xy5\n";
                     V[0xF] = V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4] ? 1 : 0;
                     V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0006:
                     // 8xy6 - SHR Vx {, Vy}
-                    cout << "Unhandled " << hex << opcode << "\n";
-                    throw 1;
+                    // Set Vx = Vx SHR 1.
+                    cout << " -- 8xy6\n";
+
+                    // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0.
+                    V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
+                    V[(opcode & 0x0F00) >> 8] >>= 1;
+                    pc += 2;
+                    break;
                 case 0x0007:
                     // 8xy7 - SUBN Vy, Vy
                     cout << "Unhandled " << hex << opcode << "\n";
@@ -367,12 +375,34 @@ void Chip8::cycle() {
                     // Fx29 - LD F, Vx
                 // case 0x0030:
                     // Fx30 - LD HF, Vx (super chip-48)
-                // case 0x0033:
+                case 0x0033:
                     // Fx33 - LD B, Vx
-                // case 0x0055:
+                    // Store BCD representation of Vx in memory locations I, I+1, and I+2.
+                case 0x0055:
                     // Fx55 - LD [I], Vx
-                // case 0x0065:
+                    // Store registers V0 through Vx in memory starting at location I.
+                    {
+                        cout << " -- Fx55\n";
+                        unsigned short endX = (opcode & 0x0F00) >> 8;
+                        for (int i = 0; i <= endX; i++) {
+                            memory[I + i] = V[i];
+                        }
+                        pc += 2;
+                        break;
+                    }
+                case 0x0065:
                     // Fx65 - LD Vx, [I]
+                    // Read registers V0 through Vx from memory starting at location I.
+                    {
+                        cout << " -- Fx65\n";
+                        unsigned short endX = (opcode & 0x0F00) >> 8;
+                        for (int i = 0; i <= endX; i++) {
+                            V[i] = memory[I + i];
+                        }
+                        pc += 2;
+                        break;
+                    }
+
                 // case 0x0075:
                     // Fx75 - LD R, Vx
                 // case 0x85:
