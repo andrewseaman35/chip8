@@ -147,24 +147,23 @@ void Chip8::cycle() {
                     break;
                 case 0x00C0:
                     // 00Cn - SCD nibble (super chip-48)
-                    break;
+                    cout << "unhandled " << hex << opcode;
+                    throw;
                 case 0x00F0:
                     switch(opcode & 0x000F) {
                         case 0x00B:
                             // 00FB - SCR (super chip-48)
-                            break;
                         case 0x00C:
                             // 00FC - SCL (super chip-48)
-                            break;
                         case 0x00D:
                             // 00FD - EXIT (super chip-48)
-                            break;
                         case 0x00E:
                             // 00FE - LOW (super chip-48)
-                            break;
                         case 0x00F:
                             // 00FF - HIGH (super chip-49)
-                            break;
+                        default:
+                            cout << "Unhandled " << hex << opcode << "\n";
+                            throw 1;
                     }
                 default:
                     // 0nnn - SYS addr (unnecessary, I think?)
@@ -232,28 +231,33 @@ void Chip8::cycle() {
                     break;
                 case 0x0001:
                     // 8xy1 - OR Vx, Vy
+                    // Set Vx = Vx OR Vy.
+                    cout << " -- 8xy1\n";
+                    V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
+                    pc += 2;
                     break;
                 case 0x0002:
                     // 8xy2 - AND Vx, Vy
+                    // Set Vx = Vx AND Vy.
+                    cout << " -- 8xy2\n";
+                    V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
+                    pc += 2;
                     break;
                 case 0x0003:
                     // 8xy3 - OR Vx, Vy
-                    break;
                 case 0x0004:
                     // 8xy4 - ADD Vx, Vy
-                    break;
                 case 0x0005:
                     // 8xy5 - SUB Vx, Vy
-                    break;
                 case 0x0006:
                     // 8xy6 - SHR Vx {, Vy}
-                    break;
                 case 0x0007:
                     // 8xy7 - SUBN Vy, Vy
-                    break;
                 case 0x000E:
                     // 8xyE - SHL Vx {, Vy}
-                    break;
+                default:
+                    cout << "Unhandled " << hex << opcode << "\n";
+                    throw 1;
             }
             break;
         case 0x9000:
@@ -271,10 +275,12 @@ void Chip8::cycle() {
             break;
         case 0xB000:
             // Bnnn - JP V0, addr
-            break;
+            cout << "Unhandled " << hex << opcode << "\n";
+            throw 2;
         case 0xC000:
             // Cxkk - RND Vx, byte
-            break;
+            cout << "Unhandled " << hex << opcode << "\n";
+            throw;
         case 0xD000:
         {
             // Dxyn - DRW Vx, Vy, nibble
@@ -314,49 +320,41 @@ void Chip8::cycle() {
             switch(opcode & 0x00FF) {
                 case 0x009E:
                     // Ex9E - SKP Vx
-                    break;
                 case 0x00A1:
                     // ExA1 - SKNP Vx
-                    break;
+                default:
+                    cout << "Unhandled " << hex << opcode << "\n";
+                    throw 2;
             }
         case 0xF000:
             switch(opcode & 0x00FF) {
                 case 0x0007:
                     // Fx07 - LD Vx, DT
-                    break;
                 case 0x000A:
                     // Fx0A - LD Vx, K
-                    break;
                 case 0x0015:
                     // Fx15: - LD DT, Vx
-                    break;
                 case 0x0018:
                     // Fx18 - LD ST, Vx
-                    break;
                 case 0x001E:
                     // Fx1E - ADD I, Vx
-                    break;
                 case 0x0029:
                     // Fx29 - LD F, Vx
-                    break;
                 case 0x0030:
                     // Fx30 - LD HF, Vx (super chip-48)
-                    break;
                 case 0x0033:
                     // Fx33 - LD B, Vx
-                    break;
                 case 0x0055:
                     // Fx55 - LD [I], Vx
-                    break;
                 case 0x0065:
                     // Fx65 - LD Vx, [I]
-                    break;
                 case 0x0075:
                     // Fx75 - LD R, Vx
-                    break;
                 case 0x85:
                     // Fx85 - LD Vx, R
-                    break;
+                default:
+                    cout << "Unhandled " << hex << opcode << "\n";
+                    throw "asdf";
             }
             break;
     }
