@@ -6,5 +6,6 @@ using namespace std;
 
 int main() {
     Chip8 chip8 = Chip8();
-    chip8.test();
+
+    chip8.init();
 }

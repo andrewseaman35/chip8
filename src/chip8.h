@@ -16,19 +16,24 @@ private:
     uint8_t sp; // "The stack pointer (SP) can be 8-bit"
 
     // "Chip-8 also has two special purpose 8-bit registers".
-    uint8_t delay_timer;
-    uint8_t sound_timer;
+    uint8_t delayTimer;
+    uint8_t soundTimer;
 
     uint16_t pc; // "The program counter (PC) should be 16-bit"
 
-    void init();
+    void clearDisplay();
+    void clearStack();
+    void clearRegisters();
+    void clearKeypad();
+
     void cycle();
 
 public:
-    uint8_t display_buffer[64*32]; // "64x32-pixel monochrome display"
+    uint8_t displayBuffer[64*32]; // "64x32-pixel monochrome display"
     uint8_t keypad[16]; // "16-key hexadecimal keypad"
 
     void test();
+    void init();
 
 };
 
