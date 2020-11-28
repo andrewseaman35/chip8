@@ -9,6 +9,9 @@ using namespace std;
 const int MEMORY_SIZE = 4096;
 const int INTERPRETER_SIZE = 512;
 
+const int DISPLAY_WIDTH = 64;
+const int DISPLAY_HEIGHT = 32;
+
 
 void Chip8::init() {
     opcode = 0;
@@ -27,7 +30,7 @@ void Chip8::init() {
 }
 
 void Chip8::clearDisplay() {
-    for (int i = 0; i < 2048; i++) {
+    for (int i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT); i++) {
         displayBuffer[i] = 0;
     }
 }
@@ -47,6 +50,16 @@ void Chip8::clearRegisters() {
 void Chip8::clearKeypad() {
     for (int i = 0; i < 16; i++) {
         keypad[i] = 0;
+    }
+}
+
+void Chip8::printDisplay() {
+    cout << "printDisplay\n";
+    for (int j = 0; j < DISPLAY_HEIGHT; j ++) {
+        for (int i = 0; i < DISPLAY_WIDTH; i++) {
+            cout << to_string(displayBuffer[i + (j * DISPLAY_WIDTH)]);
+        }
+        cout << "\n";
     }
 }
 
@@ -216,9 +229,40 @@ void Chip8::cycle() {
             // Cxkk - RND Vx, byte
             break;
         case 0xD000:
+        {
             // Dxyn - DRW Vx, Vy, nibble
             // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+            cout << " -- Dxyn\n";
+            unsigned short xStart = V[(opcode & 0x0F00) >> 8];
+            unsigned short yStart = V[(opcode & 0x00F0) >> 4];
+            unsigned short height = opcode & 0x000F;
+
+            // If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0.
+            V[0xF] = 0;
+
+            unsigned short pos;
+            unsigned short val;
+            for (int y = 0; y < height; y++) {
+                // The interpreter reads n bytes from memory, starting at the address stored in I
+                val = memory[I + y];
+                for (int x = 0; x < 8; x++) {
+                    pos = (xStart + x + ((yStart + y) * DISPLAY_WIDTH));
+                    if (displayBuffer[pos] == 1) {
+                        // If this causes any pixels to be erased, VF is set to 1
+                        V[0xF] = 1;
+                    }
+                    // cout << to_string(pos) << " ";
+
+                    // Sprites are XORed onto the existing screen
+                    displayBuffer[pos] ^= 1;
+                    // cout << "\n" << to_string(displayBuffer[65]) << "\n";
+                }
+            }
+            pc += 2;
+
+            this->printDisplay();
             break;
+        }
         case 0xE000:
             switch(opcode & 0x00FF) {
                 case 0x009E:

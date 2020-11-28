@@ -27,6 +27,7 @@ private:
     void clearKeypad();
 
     void printRegisters();
+    void printDisplay();
 
 public:
     uint8_t displayBuffer[64*32]; // "64x32-pixel monochrome display"
