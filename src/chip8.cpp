@@ -55,9 +55,14 @@ void Chip8::clearKeypad() {
 
 void Chip8::printDisplay() {
     cout << "printDisplay\n";
+    unsigned short val;
     for (int j = 0; j < DISPLAY_HEIGHT; j ++) {
         for (int i = 0; i < DISPLAY_WIDTH; i++) {
-            cout << to_string(displayBuffer[i + (j * DISPLAY_WIDTH)]);
+            if (displayBuffer[i + (j * DISPLAY_WIDTH)] == 1) {
+                cout << 'X';
+            } else {
+                cout << " ";
+            }
         }
         cout << "\n";
     }
@@ -161,15 +166,29 @@ void Chip8::cycle() {
             break;
         case 0x2000:
             // 2nnn - CALL addr
+            // Call subroutine at nnn.
+            stack[sp] = pc;
+            sp += 1;
+            pc = opcode & 0x0FFF;
+            cout << "Stack pointer: " << to_string(sp) << " ";
             break;
         case 0x3000:
             // 3xkk - SE Vx, byte
+            // Skip next instruction if Vx = kk.
+            cout << " -- 3xkk\n";
+            pc += V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF) ? 4 : 2;
             break;
         case 0x4000:
             // 4xkk - SNE Vx, byte
+            // Skip next instruction if Vx != kk.
+            cout << " -- 4xkk\n";
+            pc += V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF) ? 4 : 2;
             break;
         case 0x5000:
             // 5xy0 - SE Vx, Vy
+            // Skip next instruction if Vx = Vy.
+            cout << " -- 5xk0\n";
+            pc += V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F) >> 4] ? 4 : 2;
             break;
         case 0x6000:
             // 6xkk - LD Vx, byte
@@ -181,6 +200,10 @@ void Chip8::cycle() {
             break;
         case 0x7000:
             // 7xkk - ADD Vx, byte
+            // Set Vx = Vx + kk.
+            cout << " -- 7xkk\n";
+            V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
+            pc += 2;
             break;
         case 0x8000:
             switch(opcode & 0x000F) {
@@ -246,16 +269,16 @@ void Chip8::cycle() {
                 // The interpreter reads n bytes from memory, starting at the address stored in I
                 val = memory[I + y];
                 for (int x = 0; x < 8; x++) {
-                    pos = (xStart + x + ((yStart + y) * DISPLAY_WIDTH));
-                    if (displayBuffer[pos] == 1) {
-                        // If this causes any pixels to be erased, VF is set to 1
-                        V[0xF] = 1;
-                    }
-                    // cout << to_string(pos) << " ";
+                    if((val & (0x80 >> x)) != 0) {
+                        pos = (xStart + x + ((yStart + y) * DISPLAY_WIDTH));
+                        if (displayBuffer[pos] == 1) {
+                            // If this causes any pixels to be erased, VF is set to 1
+                            V[0xF] = 1;
+                        }
 
-                    // Sprites are XORed onto the existing screen
-                    displayBuffer[pos] ^= 1;
-                    // cout << "\n" << to_string(displayBuffer[65]) << "\n";
+                        // Sprites are XORed onto the existing screen
+                        displayBuffer[pos] ^= 1;
+                    }
                 }
             }
             pc += 2;
