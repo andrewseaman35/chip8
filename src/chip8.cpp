@@ -1,8 +1,14 @@
 #include <iostream>
+#include <fstream>
+#include <sys/stat.h>
 
 #include "chip8.h"
 
-const int CHIP8_MEMORY_SIZE = 512;
+using namespace std;
+
+const int MEMORY_SIZE = 4096;
+const int INTERPRETER_SIZE = 512;
+
 
 void Chip8::init() {
     opcode = 0;
@@ -17,7 +23,7 @@ void Chip8::init() {
     this->clearRegisters();
     this->clearKeypad();
 
-    std::cout << "init";
+    std::cout << "Initialized\n";
 }
 
 void Chip8::clearDisplay() {
@@ -44,6 +50,41 @@ void Chip8::clearKeypad() {
     }
 }
 
+void Chip8::load(const char *romPath) {
+    cout << "Loading rom: " << romPath << "\n";
+
+    // Get the file size in bytes
+    struct stat fileStat;
+    int romFileSize = 0;
+    if (stat(romPath, &fileStat) == 0) {
+        romFileSize = fileStat.st_size;
+        cout << "ROM File size (bytes): " << romFileSize << "\n";
+    } else {
+        throw "Error while running stat";
+    }
+
+    if (romFileSize > (MEMORY_SIZE - INTERPRETER_SIZE)) {
+        throw "ROM too big\n";
+    }
+
+    // Read the file into a buffer
+    char romReadBuffer[romFileSize];
+    ifstream romFile(romPath, ios::in | ios::binary);
+    romFile.read(romReadBuffer, romFileSize);
+    if (!romFile) {
+        throw "Error reading ROM";
+    }
+    romFile.close();
+
+    // Copy the file into memory, starting right after where the interpreter
+    // would have lived
+    for (int i = 0; i < romFileSize; i++) {
+        memory[INTERPRETER_SIZE + i] = romReadBuffer[i];
+    }
+
+    cout << "ROM loaded into memory!";
+}
+
 void Chip8::cycle() {
     // Fetch Opcode
     // opcode is two bytes long and located at the program counter
@@ -56,9 +97,12 @@ void Chip8::cycle() {
             switch(opcode & 0x00F0) {
                 case 0x00E0:
                     // 00E0 - CLS
+                    // Clear the display.
+                    this->clearDisplay();
                     break;
                 case 0x00EE:
                     // 00EE - RET
+                    // Return from a subroutine.
                     break;
                 case 0x00C0:
                     // 00Cn - SCD nibble (super chip-48)
@@ -204,8 +248,4 @@ void Chip8::cycle() {
     // Execute Opcode
 
     // Update timers
-}
-
-void Chip8::test() {
-    std::cout << "Hello World, test!" << CHIP8_MEMORY_SIZE;
 }

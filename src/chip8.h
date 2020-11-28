@@ -34,6 +34,7 @@ public:
 
     void test();
     void init();
+    void load(const char *romPath);
 
 };
 
