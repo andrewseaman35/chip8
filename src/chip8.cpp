@@ -16,7 +16,7 @@ void Chip8::init() {
     sp = 0;
     delayTimer = 0;
     soundTimer = 0;
-    pc = 0;
+    pc = INTERPRETER_SIZE;
 
     this->clearDisplay();
     this->clearStack();
@@ -48,6 +48,14 @@ void Chip8::clearKeypad() {
     for (int i = 0; i < 16; i++) {
         keypad[i] = 0;
     }
+}
+
+void Chip8::printRegisters() {
+    cout << "printRegisters: ";
+    for (int i = 0; i < 16; i++) {
+        cout << to_string(V[i]) << " ";
+    }
+    cout << "\n";
 }
 
 void Chip8::load(const char *romPath) {
@@ -82,7 +90,7 @@ void Chip8::load(const char *romPath) {
         memory[INTERPRETER_SIZE + i] = romReadBuffer[i];
     }
 
-    cout << "ROM loaded into memory!";
+    cout << "ROM loaded into memory!\n";
 }
 
 void Chip8::cycle() {
@@ -90,6 +98,8 @@ void Chip8::cycle() {
     // opcode is two bytes long and located at the program counter
     // shift the first byte by 8 and OR it with the following byte
     opcode = memory[pc] << 8 | memory[pc + 1];
+
+    cout << "\nOPCODE: " << hex << opcode;
 
     // Decode Opcode
     switch(opcode & 0xF000) {
@@ -131,6 +141,10 @@ void Chip8::cycle() {
             }
         case 0x1000:
             // 1nnn - JP addr
+            // Jump to location nnn.
+            cout << " -- 1nnn\n";
+            pc = opcode & 0x0FFF;
+            cout << "Jumping to " << to_string(pc) << "\n";
             break;
         case 0x2000:
             // 2nnn - CALL addr
@@ -146,6 +160,11 @@ void Chip8::cycle() {
             break;
         case 0x6000:
             // 6xkk - LD Vx, byte
+            // Set Vx = kk.
+            cout << " -- 6xkk\n";
+            V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+            pc += 2;
+            this->printRegisters();
             break;
         case 0x7000:
             // 7xkk - ADD Vx, byte
@@ -185,6 +204,10 @@ void Chip8::cycle() {
             break;
         case 0xA000:
             // Annn - LD I, addr
+            // Set I = nnn.
+            cout << " -- Annn\n";
+            I = opcode & 0x0FFF;
+            pc += 2;
             break;
         case 0xB000:
             // Bnnn - JP V0, addr
@@ -194,6 +217,7 @@ void Chip8::cycle() {
             break;
         case 0xD000:
             // Dxyn - DRW Vx, Vy, nibble
+            // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
             break;
         case 0xE000:
             switch(opcode & 0x00FF) {

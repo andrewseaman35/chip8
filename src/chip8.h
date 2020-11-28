@@ -26,7 +26,7 @@ private:
     void clearRegisters();
     void clearKeypad();
 
-    void cycle();
+    void printRegisters();
 
 public:
     uint8_t displayBuffer[64*32]; // "64x32-pixel monochrome display"
@@ -35,7 +35,7 @@ public:
     void test();
     void init();
     void load(const char *romPath);
-
+    void cycle();
 };
 
 #endif // CHIP_8_H
