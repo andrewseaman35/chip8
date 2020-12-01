@@ -145,10 +145,8 @@ void Chip8::cycle() {
                     cout << "Removed from stack: " << to_string(pc) << "\n";
                     pc += 2;
                     break;
-                case 0x00C0:
-                    // 00Cn - SCD nibble (super chip-48)
-                    cout << "unhandled " << hex << opcode;
-                    throw;
+                // case 0x00C0: (super chip-48)
+                    // 00Cn - SCD nibble
                 case 0x00F0:
                     switch(opcode & 0x000F) {
                         // case 0x00B:
@@ -308,8 +306,9 @@ void Chip8::cycle() {
             break;
         case 0xB000:
             // Bnnn - JP V0, addr
-            cout << "Unhandled " << hex << opcode << "\n";
-            throw 2;
+            // Jump to location nnn + V0.
+            pc = (opcode & 0x0FFF) + V[0];
+            break;
         case 0xC000:
             // Cxkk - RND Vx, byte
             cout << "Unhandled " << hex << opcode << "\n";
@@ -361,23 +360,51 @@ void Chip8::cycle() {
             }
         case 0xF000:
             switch(opcode & 0x00FF) {
-                // case 0x0007:
+                case 0x0007:
                     // Fx07 - LD Vx, DT
+                    // Set Vx = delay timer value.
+                    V[(opcode & 0x0F00) >> 8] = delayTimer;
+                    pc += 2;
+                    break;
                 // case 0x000A:
                     // Fx0A - LD Vx, K
-                // case 0x0015:
+                case 0x0015:
                     // Fx15: - LD DT, Vx
-                // case 0x0018:
+                    // Set delay timer = Vx.
+                    delayTimer = V[(opcode & 0x0F00) >> 8];
+                    pc += 2;
+                    break;
+                case 0x0018:
                     // Fx18 - LD ST, Vx
-                // case 0x001E:
+                    // Set sound timer = Vx.
+                    soundTimer = V[(opcode & 0x0F00) >> 8];
+                    pc += 2;
+                    break;
+                case 0x001E:
                     // Fx1E - ADD I, Vx
+                    // Set I = I + Vx.
+                    I += (opcode & 0x0F00) >> 8;
+                    pc += 2;
+                    break;
                 // case 0x0029:
                     // Fx29 - LD F, Vx
-                // case 0x0030:
-                    // Fx30 - LD HF, Vx (super chip-48)
+                // case 0x0030: (super chip-48)
+                    // Fx30 - LD HF, Vx
                 case 0x0033:
                     // Fx33 - LD B, Vx
                     // Store BCD representation of Vx in memory locations I, I+1, and I+2.
+                    {
+                        cout << " -- Fx33\n";
+                        unsigned short vx = V[(opcode & 0x0F00) >> 8];
+                        memory[I] = vx / 100;
+                        memory[I + 1] = (vx / 10) % 10;
+                        memory[I + 2] = vx % 10;
+
+                        cout << "  VX: " << to_string(vx) << endl;
+                        cout << "  Stored BCD: " << to_string(memory[I]) << " " << to_string(memory[I + 1]) << " " << to_string(memory[I + 2]) << endl;
+                        pc += 2;
+                        break;
+                    }
                 case 0x0055:
                     // Fx55 - LD [I], Vx
                     // Store registers V0 through Vx in memory starting at location I.
@@ -403,9 +430,9 @@ void Chip8::cycle() {
                         break;
                     }
 
-                // case 0x0075:
+                // case 0x0075: (super chip-48)
                     // Fx75 - LD R, Vx
-                // case 0x85:
+                // case 0x85: (super chip-48)
                     // Fx85 - LD Vx, R
                 default:
                     cout << "Unhandled " << hex << opcode << "\n";
