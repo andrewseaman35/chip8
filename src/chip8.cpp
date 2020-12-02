@@ -23,12 +23,15 @@ void Chip8::init() {
     this->clearRegisters();
     this->clearKeypad();
 
+    this->copyFontset();
+
+    srand(time(NULL));
     std::cout << "Initialized\n";
 }
 
 void Chip8::handleKeyDown(int key) {
     this->keypad[key] = 1;
-    if (registerAwaitingKeyPress) {
+    if (registerAwaitingKeyPress > -1) {
         V[registerAwaitingKeyPress] = key;
         registerAwaitingKeyPress = -1;
         pc += 2;
@@ -60,6 +63,12 @@ void Chip8::clearRegisters() {
 void Chip8::clearKeypad() {
     for (int i = 0; i < 16; i++) {
         keypad[i] = 0;
+    }
+}
+
+void Chip8::copyFontset() {
+    for (int i = 0; i < 80; ++i) {
+        memory[i] = chip8Fontset[i];
     }
 }
 
@@ -431,8 +440,15 @@ void Chip8::cycle() {
                     I += (opcode & 0x0F00) >> 8;
                     pc += 2;
                     break;
-                // case 0x0029:
+                case 0x0029:
                     // Fx29 - LD F, Vx
+                    // Set I = location of sprite for digit Vx.
+                    // The fontset is loaded as first 80 bytes, each represented
+                    // value is 5 bytes long, meaning that "1" is bytes 0-4,
+                    // "2" is bytes 5-9 and so on.
+                    I = V[(opcode & 0x0F00) >> 8] * 0x5;
+                    pc += 2;
+                    break;
                 // case 0x0030: (super chip-48)
                     // Fx30 - LD HF, Vx
                 case 0x0033:
