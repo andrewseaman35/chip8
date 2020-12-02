@@ -1,8 +1,6 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-const bool DEBUG = false;
-
 const int MEMORY_SIZE = 4096;
 const int INTERPRETER_SIZE = 512;
 

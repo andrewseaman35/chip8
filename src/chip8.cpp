@@ -2,10 +2,14 @@
 #include <fstream>
 #include <sys/stat.h>
 
+#include "logger.h"
 #include "chip8.h"
 #include "constants.h"
 
 using namespace std;
+
+
+Logger* logger = Logger::getLogger();
 
 
 void Chip8::init() {
@@ -26,7 +30,8 @@ void Chip8::init() {
     this->copyFontset();
 
     srand(time(NULL));
-    std::cout << "Initialized\n";
+
+    logger->info("Chip8 Initialized!\n");
 }
 
 void Chip8::handleKeyDown(int key) {
@@ -73,58 +78,60 @@ void Chip8::copyFontset() {
 }
 
 void Chip8::printDisplay() {
-    if (!DEBUG) {
-        return;
-    }
-    cout << "printDisplay\n";
-    unsigned short val;
+    logger->display("printDisplay\n");
+    string out = "";
     for (int j = 0; j < DISPLAY_HEIGHT; j ++) {
         for (int i = 0; i < DISPLAY_WIDTH; i++) {
             if (displayBuffer[i + (j * DISPLAY_WIDTH)] == 1) {
-                cout << 'X';
+                out += 'X';
             } else {
-                cout << " ";
+                out += " ";
             }
         }
-        cout << "\n";
+        out += "\n";
     }
+
+    logger->display(out);
 }
 
 void Chip8::printRegisters() {
-    if (!DEBUG) {
-        return;
-    }
-    cout << "printRegisters: \n   ";
+    logger->display("printRegisters\n");
+    string out = "";
     for (int i = 0; i < 16; i++) {
-        cout << to_string(V[i]) << " ";
+        out += to_string(V[i]);
+        out += " ";
     }
-    cout << "\n";
+    out += "\n";
+
+    logger->display(out);
 }
 
 void Chip8::printStack() {
-    if (!DEBUG) {
-        return;
-    }
-    cout << "printStack: \n   ";
+    logger->display("printStack\n");
+    string out = "";
     for (int i = 0; i < 16; i++) {
-        cout << to_string(stack[i]) << " ";
+        out += to_string(stack[i]);
+        out += " ";
     }
-    cout << "\n";
+    out += "\n";
+
+    logger->display(out);
 }
 
 void Chip8::printKeypad() {
-    if (!DEBUG) {
-        return;
-    }
-    cout << "keypad: \n   ";
+    logger->display("printKeypad\n");
+    string out = "";
     for (int i = 0; i < 16; i++) {
-        cout << to_string(keypad[i]) << " ";
+        out += to_string(keypad[i]);
+        out += " ";
     }
-    cout << "\n";
+    out += "\n";
+
+    logger->display(out);
 }
 
 void Chip8::load(const char *romPath) {
-    cout << "Loading rom: " << romPath << "\n";
+    logger->info("Loading ROM: " + string(romPath) + "\n");
 
     this->init();
 
@@ -133,7 +140,7 @@ void Chip8::load(const char *romPath) {
     int romFileSize = 0;
     if (stat(romPath, &fileStat) == 0) {
         romFileSize = fileStat.st_size;
-        cout << "ROM File size (bytes): " << romFileSize << "\n";
+        logger->info("ROM File size (bytes): " + to_string(romFileSize) + "\n");
     } else {
         throw "Error while running stat";
     }
@@ -157,7 +164,7 @@ void Chip8::load(const char *romPath) {
         memory[INTERPRETER_SIZE + i] = romReadBuffer[i];
     }
 
-    cout << "ROM loaded into memory!\n";
+    logger->info("ROM loaded into memory!\n");
 }
 
 void Chip8::cycle() {
@@ -174,16 +181,16 @@ void Chip8::cycle() {
                 case 0x00E0:
                     // 00E0 - CLS
                     // Clear the display.
-                    cout << " -- 00E0\n";
+                    logger->debug(" -- 00E0\n");
                     this->clearDisplay();
                     pc += 2;
                     break;
                 case 0x00EE:
                     // 00EE - RET
                     // Return from a subroutine.
-                    cout << " -- 00EE\n";
+                    logger->debug(" -- 00EE\n");
                     pc = stack[--sp];
-                    cout << "Removed from stack: " << to_string(pc) << "\n";
+                    logger->debug("Removed from stack: " + to_string(pc) + "\n");
                     pc += 2;
                     break;
                 // case 0x00C0: (super chip-48)
@@ -213,41 +220,41 @@ void Chip8::cycle() {
         case 0x1000:
             // 1nnn - JP addr
             // Jump to location nnn.
-            // cout << " -- 1nnn\n";
+            logger->debug(" -- 1nnn\n");
             pc = opcode & 0x0FFF;
-            // cout << "Jumping to " << to_string(pc) << "\n";
+            logger->debug("Jumping to " + to_string(pc) + "\n");
             break;
         case 0x2000:
             // 2nnn - CALL addr
             // Call subroutine at nnn.
-            cout << " -- 2nnn\n";
+            logger->debug(" -- 2nnn\n");
             stack[sp++] = pc;
-            cout << "Added to stack: " << to_string(pc) << "\n";
+            logger->debug("Added to stack: " + to_string(pc) + "\n");
             pc = opcode & 0x0FFF;
             this->printStack();
             break;
         case 0x3000:
             // 3xkk - SE Vx, byte
             // Skip next instruction if Vx = kk.
-            cout << " -- 3xkk\n";
+            logger->debug(" -- 3xkk\n");
             pc += V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF) ? 4 : 2;
             break;
         case 0x4000:
             // 4xkk - SNE Vx, byte
             // Skip next instruction if Vx != kk.
-            cout << " -- 4xkk\n";
+            logger->debug(" -- 4xkk\n");
             pc += V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF) ? 4 : 2;
             break;
         case 0x5000:
             // 5xy0 - SE Vx, Vy
             // Skip next instruction if Vx = Vy.
-            cout << " -- 5xk0\n";
+            logger->debug(" -- 5xk0\n");
             pc += V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F) >> 4] ? 4 : 2;
             break;
         case 0x6000:
             // 6xkk - LD Vx, byte
             // Set Vx = kk.
-            cout << " -- 6xkk\n";
+            logger->debug(" -- 6xkk\n");
             V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
             pc += 2;
             this->printRegisters();
@@ -255,7 +262,7 @@ void Chip8::cycle() {
         case 0x7000:
             // 7xkk - ADD Vx, byte
             // Set Vx = Vx + kk.
-            cout << " -- 7xkk\n";
+            logger->debug(" -- 7xkk\n");
             V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
             pc += 2;
             break;
@@ -264,35 +271,35 @@ void Chip8::cycle() {
                 case 0x0000:
                     // 8xy0 - LD Vx, Vy
                     // Set Vx = Vy.
-                    cout << " -- 8xy0\n";
+                    logger->debug(" -- 8xy0\n");
                     V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0001:
                     // 8xy1 - OR Vx, Vy
                     // Set Vx = Vx OR Vy.
-                    cout << " -- 8xy1\n";
+                    logger->debug(" -- 8xy1\n");
                     V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0002:
                     // 8xy2 - AND Vx, Vy
                     // Set Vx = Vx AND Vy.
-                    cout << " -- 8xy2\n";
+                    logger->debug(" -- 8xy2\n");
                     V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0003:
                     // 8xy3 - OR Vx, Vy
                     // Set Vx = Vx XOR Vy.
-                    cout << " -- 8xy3\n";
+                    logger->debug(" -- 8xy3\n");
                     V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0004:
                     // 8xy4 - ADD Vx, Vy
                     // Set Vx = Vx + Vy, set VF = carry.
-                    cout << " -- 8xy4\n";
+                    logger->debug(" -- 8xy4\n");
                     V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
                     V[0xF] = V[(opcode & 0x0F00) >> 8] > 0xFF ? 1 : 0;
                     pc += 2;
@@ -300,7 +307,7 @@ void Chip8::cycle() {
                 case 0x0005:
                     // 8xy5 - SUB Vx, Vy
                     // Set Vx = Vx - Vy, set VF = NOT borrow.
-                    cout << " -- 8xy5\n";
+                    logger->debug(" -- 8xy5\n");
                     V[0xF] = V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4] ? 1 : 0;
                     V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
@@ -308,7 +315,7 @@ void Chip8::cycle() {
                 case 0x0006:
                     // 8xy6 - SHR Vx {, Vy}
                     // Set Vx = Vx SHR 1.
-                    cout << " -- 8xy6\n";
+                    logger->debug(" -- 8xy6\n");
 
                     // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0.
                     V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
@@ -335,13 +342,13 @@ void Chip8::cycle() {
         case 0x9000:
             // 9xy0 - SNE Vx, Vy
             // Skip next instruction if Vx != Vy.
-            cout << " -- 9xy0\n";
+            logger->debug(" -- 9xy0\n");
             pc += V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4] ? 4 : 2;
             break;
         case 0xA000:
             // Annn - LD I, addr
             // Set I = nnn.
-            cout << " -- Annn\n";
+            logger->debug(" -- Annn\n");
             I = opcode & 0x0FFF;
             pc += 2;
             break;
@@ -352,13 +359,15 @@ void Chip8::cycle() {
             break;
         case 0xC000:
             // Cxkk - RND Vx, byte
-            cout << "Unhandled " << hex << opcode << "\n";
-            throw;
+            // Set Vx = random byte AND kk.
+            V[(opcode & 0x0F00) >> 8] = (rand() % 256) & (opcode & 0x00FF);
+            logger->debug("  Random: " + to_string(V[(opcode & 0x0F00) >> 8]) + "\n");
+            break;
         case 0xD000:
         {
             // Dxyn - DRW Vx, Vy, nibble
             // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
-            cout << " -- Dxyn\n";
+            logger->debug(" -- Dxyn\n");
             unsigned short xStart = V[(opcode & 0x0F00) >> 8];
             unsigned short yStart = V[(opcode & 0x00F0) >> 4];
             unsigned short height = opcode & 0x000F;
@@ -402,9 +411,10 @@ void Chip8::cycle() {
                     pc += keypad[(opcode & 0x0F00) >> 8] == 0 ? 4 : 2;
                     break;
                 default:
-                    cout << "Unhandled " << hex << opcode << "\n";
+                    cout << "Unhandled :( " << hex << opcode << "\n";
                     throw 2;
             }
+            break;
         case 0xF000:
             switch(opcode & 0x00FF) {
                 case 0x0007:
@@ -421,6 +431,7 @@ void Chip8::cycle() {
                     // register index that needs the press. We'll capture this when
                     // handling the key press in `handleKeyDown`.
                     registerAwaitingKeyPress = ((opcode & 0x0F00) >> 8);
+                    logger->debug("Awaiting key press: " + to_string(registerAwaitingKeyPress) + "\n");
                     break;
                 case 0x0015:
                     // Fx15: - LD DT, Vx
@@ -455,14 +466,14 @@ void Chip8::cycle() {
                     // Fx33 - LD B, Vx
                     // Store BCD representation of Vx in memory locations I, I+1, and I+2.
                     {
-                        cout << " -- Fx33\n";
+                        logger->debug(" -- Fx33\n");
                         unsigned short vx = V[(opcode & 0x0F00) >> 8];
                         memory[I] = vx / 100;
                         memory[I + 1] = (vx / 10) % 10;
                         memory[I + 2] = vx % 10;
 
-                        cout << "  VX: " << to_string(vx) << endl;
-                        cout << "  Stored BCD: " << to_string(memory[I]) << " " << to_string(memory[I + 1]) << " " << to_string(memory[I + 2]) << endl;
+                        logger->debug("  VX: " + to_string(vx) + "\n");
+                        logger->debug("  Stored BCD: " + to_string(memory[I]) + " " + to_string(memory[I + 1]) + " " + to_string(memory[I + 2]) + "\n");
                         pc += 2;
                         break;
                     }
@@ -470,7 +481,7 @@ void Chip8::cycle() {
                     // Fx55 - LD [I], Vx
                     // Store registers V0 through Vx in memory starting at location I.
                     {
-                        cout << " -- Fx55\n";
+                        logger->debug(" -- Fx55\n");
                         unsigned short endX = (opcode & 0x0F00) >> 8;
                         for (int i = 0; i <= endX; i++) {
                             memory[I + i] = V[i];
@@ -482,7 +493,7 @@ void Chip8::cycle() {
                     // Fx65 - LD Vx, [I]
                     // Read registers V0 through Vx from memory starting at location I.
                     {
-                        cout << " -- Fx65\n";
+                        logger->debug(" -- Fx65\n");
                         unsigned short endX = (opcode & 0x0F00) >> 8;
                         for (int i = 0; i <= endX; i++) {
                             V[i] = memory[I + i];

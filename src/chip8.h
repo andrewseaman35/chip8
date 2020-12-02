@@ -21,7 +21,7 @@ private:
 
     uint16_t pc; // "The program counter (PC) should be 16-bit"
 
-    uint8_t registerAwaitingKeyPress;
+    int registerAwaitingKeyPress;
 
     void clearDisplay();
     void clearStack();
