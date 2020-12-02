@@ -21,6 +21,8 @@ private:
 
     uint16_t pc; // "The program counter (PC) should be 16-bit"
 
+    uint8_t registerAwaitingKeyPress;
+
     void clearDisplay();
     void clearStack();
     void clearRegisters();
@@ -34,10 +36,15 @@ public:
     uint8_t displayBuffer[64*32]; // "64x32-pixel monochrome display"
     uint8_t keypad[16]; // "16-key hexadecimal keypad"
 
-    void test();
     void init();
     void load(const char *romPath);
     void cycle();
+
+    void handleKeyDown(int key);
+    void handleKeyUp(int key);
+
+    void printKeypad();
+
 };
 
 #endif // CHIP_8_H

@@ -3,14 +3,9 @@
 #include <sys/stat.h>
 
 #include "chip8.h"
+#include "constants.h"
 
 using namespace std;
-
-const int MEMORY_SIZE = 4096;
-const int INTERPRETER_SIZE = 512;
-
-const int DISPLAY_WIDTH = 64;
-const int DISPLAY_HEIGHT = 32;
 
 
 void Chip8::init() {
@@ -21,12 +16,27 @@ void Chip8::init() {
     soundTimer = 0;
     pc = INTERPRETER_SIZE;
 
+    registerAwaitingKeyPress = -1;
+
     this->clearDisplay();
     this->clearStack();
     this->clearRegisters();
     this->clearKeypad();
 
     std::cout << "Initialized\n";
+}
+
+void Chip8::handleKeyDown(int key) {
+    this->keypad[key] = 1;
+    if (registerAwaitingKeyPress) {
+        V[registerAwaitingKeyPress] = key;
+        registerAwaitingKeyPress = -1;
+        pc += 2;
+    }
+}
+
+void Chip8::handleKeyUp(int key) {
+    this->keypad[key] = 0;
 }
 
 void Chip8::clearDisplay() {
@@ -54,6 +64,9 @@ void Chip8::clearKeypad() {
 }
 
 void Chip8::printDisplay() {
+    if (!DEBUG) {
+        return;
+    }
     cout << "printDisplay\n";
     unsigned short val;
     for (int j = 0; j < DISPLAY_HEIGHT; j ++) {
@@ -69,6 +82,9 @@ void Chip8::printDisplay() {
 }
 
 void Chip8::printRegisters() {
+    if (!DEBUG) {
+        return;
+    }
     cout << "printRegisters: \n   ";
     for (int i = 0; i < 16; i++) {
         cout << to_string(V[i]) << " ";
@@ -77,6 +93,9 @@ void Chip8::printRegisters() {
 }
 
 void Chip8::printStack() {
+    if (!DEBUG) {
+        return;
+    }
     cout << "printStack: \n   ";
     for (int i = 0; i < 16; i++) {
         cout << to_string(stack[i]) << " ";
@@ -84,8 +103,21 @@ void Chip8::printStack() {
     cout << "\n";
 }
 
+void Chip8::printKeypad() {
+    if (!DEBUG) {
+        return;
+    }
+    cout << "keypad: \n   ";
+    for (int i = 0; i < 16; i++) {
+        cout << to_string(keypad[i]) << " ";
+    }
+    cout << "\n";
+}
+
 void Chip8::load(const char *romPath) {
     cout << "Loading rom: " << romPath << "\n";
+
+    this->init();
 
     // Get the file size in bytes
     struct stat fileStat;
@@ -124,7 +156,7 @@ void Chip8::cycle() {
     // opcode is two bytes long and located at the program counter
     // shift the first byte by 8 and OR it with the following byte
     opcode = memory[pc] << 8 | memory[pc + 1];
-    cout << "\nOPCODE: " << hex << opcode;
+    // cout << "\nOPCODE: " << hex << opcode;
 
     // Decode Opcode
     switch(opcode & 0xF000) {
@@ -172,9 +204,9 @@ void Chip8::cycle() {
         case 0x1000:
             // 1nnn - JP addr
             // Jump to location nnn.
-            cout << " -- 1nnn\n";
+            // cout << " -- 1nnn\n";
             pc = opcode & 0x0FFF;
-            cout << "Jumping to " << to_string(pc) << "\n";
+            // cout << "Jumping to " << to_string(pc) << "\n";
             break;
         case 0x2000:
             // 2nnn - CALL addr
@@ -350,10 +382,16 @@ void Chip8::cycle() {
         }
         case 0xE000:
             switch(opcode & 0x00FF) {
-                // case 0x009E:
+                case 0x009E:
                     // Ex9E - SKP Vx
-                // case 0x00A1:
+                    // Skip next instruction if key with the value of Vx is pressed.
+                    pc += keypad[(opcode & 0x0F00) >> 8] == 1 ? 4 : 2;
+                    break;
+                case 0x00A1:
                     // ExA1 - SKNP Vx
+                    // Skip next instruction if key with the value of Vx is not pressed.
+                    pc += keypad[(opcode & 0x0F00) >> 8] == 0 ? 4 : 2;
+                    break;
                 default:
                     cout << "Unhandled " << hex << opcode << "\n";
                     throw 2;
@@ -366,8 +404,15 @@ void Chip8::cycle() {
                     V[(opcode & 0x0F00) >> 8] = delayTimer;
                     pc += 2;
                     break;
-                // case 0x000A:
+                case 0x000A:
                     // Fx0A - LD Vx, K
+                    // Wait for a key press, store the value of the key in Vx.
+
+                    // When awaiting a press, `registerAwaitingKeyPress` will hold the
+                    // register index that needs the press. We'll capture this when
+                    // handling the key press in `handleKeyDown`.
+                    registerAwaitingKeyPress = ((opcode & 0x0F00) >> 8);
+                    break;
                 case 0x0015:
                     // Fx15: - LD DT, Vx
                     // Set delay timer = Vx.
