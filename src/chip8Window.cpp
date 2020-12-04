@@ -6,9 +6,13 @@
 
 #include "chip8Window.h"
 #include "constants.h"
+#include "logger.h"
 
 
 using namespace std;
+
+
+Logger* logger2 = Logger::getLogger();
 
 
 std::unordered_map<int, int> KEYMAP = {
@@ -90,7 +94,8 @@ void Chip8Window::run() {
     uint32_t sdlTextureBuffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
 
     bool quit = false;
-    while (quit == false) {
+    // int quit = 2;
+    while (!quit) {
         while (SDL_PollEvent(&e)){
             if (e.type == SDL_QUIT){
                 quit = true;
@@ -100,12 +105,12 @@ void Chip8Window::run() {
                     quit = true;
                 } else if (KEYMAP.count(e.key.keysym.sym)) {
                     chip8->handleKeyDown(KEYMAP[e.key.keysym.sym]);
-                    chip8->printKeypad();
+                    logger2->debug(chip8->keypadToString());
                 }
             } else if (e.type == SDL_KEYUP) {
                 if (KEYMAP.count(e.key.keysym.sym)) {
                     chip8->handleKeyUp(KEYMAP[e.key.keysym.sym]);
-                    chip8->printKeypad();
+                    logger2->debug(chip8->keypadToString());
                 }
             } else if (e.type == SDL_MOUSEBUTTONDOWN){
                 // quit = true;
@@ -113,16 +118,18 @@ void Chip8Window::run() {
         }
         chip8->cycle();
 
-        for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; ++i) {
-                uint8_t pixel = chip8->displayBuffer[i];
-                sdlTextureBuffer[i] = (PIXEL_COLOR * pixel) | PIXEL_ALPHA;
-            }
+        if (chip8->requiresRerender) {
+            for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; ++i) {
+                    uint8_t pixel = chip8->displayBuffer[i];
+                    sdlTextureBuffer[i] = (PIXEL_COLOR * pixel) | PIXEL_ALPHA;
+                }
             // Update SDL texture
             SDL_UpdateTexture(sdlTexture, NULL, sdlTextureBuffer, 64 * sizeof(Uint32));
             // Clear screen and render
             SDL_RenderClear(renderer);
             SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
             SDL_RenderPresent(renderer);
+        }
 
         this_thread::sleep_for(chrono::microseconds(MICROSECOND_DELAY));
     }

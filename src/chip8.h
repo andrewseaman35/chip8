@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+using namespace std;
+
 class Chip8 {
 private:
     uint16_t opcode;
@@ -23,12 +25,15 @@ private:
 
     int registerAwaitingKeyPress;
 
+    long long lastProcessorTime;
+    long long lastTimerTime
+
     void clearDisplay();
     void clearStack();
     void clearRegisters();
     void clearKeypad();
 
-    void printRegisters();
+    string registersToString();
     void printDisplay();
     void printStack();
 
@@ -64,7 +69,7 @@ public:
     void handleKeyDown(int key);
     void handleKeyUp(int key);
 
-    void printKeypad();
+    string keypadToString();
 
 };
 

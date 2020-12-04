@@ -41,10 +41,13 @@ void Chip8::handleKeyDown(int key) {
         registerAwaitingKeyPress = -1;
         pc += 2;
     }
+    logger->debug("handleKeyDown: " + to_string(key) + "\n");
+    // logger->display(this->registersToString());
 }
 
 void Chip8::handleKeyUp(int key) {
     this->keypad[key] = 0;
+    logger->debug("handleKeyUp: " + to_string(key) + "\n");
 }
 
 void Chip8::clearDisplay() {
@@ -94,16 +97,14 @@ void Chip8::printDisplay() {
     logger->display(out);
 }
 
-void Chip8::printRegisters() {
-    logger->display("printRegisters\n");
+string Chip8::registersToString() {
     string out = "";
     for (int i = 0; i < 16; i++) {
         out += to_string(V[i]);
         out += " ";
     }
     out += "\n";
-
-    logger->display(out);
+    return out;
 }
 
 void Chip8::printStack() {
@@ -118,16 +119,14 @@ void Chip8::printStack() {
     logger->display(out);
 }
 
-void Chip8::printKeypad() {
-    logger->display("printKeypad\n");
+string Chip8::keypadToString() {
     string out = "";
     for (int i = 0; i < 16; i++) {
         out += to_string(keypad[i]);
         out += " ";
     }
     out += "\n";
-
-    logger->display(out);
+    return out;
 }
 
 void Chip8::load(const char *romPath) {
@@ -211,6 +210,7 @@ void Chip8::cycle() {
                             cout << "Unhandled " << hex << opcode << "\n";
                             throw 1;
                     }
+                    break;
                 default:
                     // 0nnn - SYS addr (unnecessary, I think?)
                     cout << "Unhandled 0nnn instruction";
@@ -230,8 +230,8 @@ void Chip8::cycle() {
             logger->debug(" -- 2nnn\n");
             stack[sp++] = pc;
             logger->debug("Added to stack: " + to_string(pc) + "\n");
-            pc = opcode & 0x0FFF;
             this->printStack();
+            pc = opcode & 0x0FFF;
             break;
         case 0x3000:
             // 3xkk - SE Vx, byte
@@ -256,8 +256,8 @@ void Chip8::cycle() {
             // Set Vx = kk.
             logger->debug(" -- 6xkk\n");
             V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+            logger->display(this->registersToString());
             pc += 2;
-            this->printRegisters();
             break;
         case 0x7000:
             // 7xkk - ADD Vx, byte
@@ -330,6 +330,7 @@ void Chip8::cycle() {
                     // 8xyE - SHL Vx {, Vy}
                     // Set Vx = Vx SHL 1.
                     // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
+                    logger->debug(" -- 8xyE\n");
                     V[0xF] = V[(opcode & 0x0F00) >> 8] >> 7;
                     V[(opcode & 0x0F00) >> 8] <<= 1;
                     pc += 2;
@@ -355,13 +356,15 @@ void Chip8::cycle() {
         case 0xB000:
             // Bnnn - JP V0, addr
             // Jump to location nnn + V0.
+            logger->debug(" -- Bnnn\n");
             pc = (opcode & 0x0FFF) + V[0];
             break;
         case 0xC000:
             // Cxkk - RND Vx, byte
             // Set Vx = random byte AND kk.
+            logger->debug(" -- Cxkk\n");
             V[(opcode & 0x0F00) >> 8] = (rand() % 256) & (opcode & 0x00FF);
-            logger->debug("  Random: " + to_string(V[(opcode & 0x0F00) >> 8]) + "\n");
+            pc += 2;
             break;
         case 0xD000:
         {
@@ -403,12 +406,20 @@ void Chip8::cycle() {
                 case 0x009E:
                     // Ex9E - SKP Vx
                     // Skip next instruction if key with the value of Vx is pressed.
+                    logger->debug(" -- Ex9E\n");
+                    logger->debug(this->keypadToString());
+                    logger->debug("  SKP - " + to_string((opcode & 0x0F00) >> 8) + " " + to_string(keypad[(opcode & 0x0F00) >> 8]) + "\n");
                     pc += keypad[(opcode & 0x0F00) >> 8] == 1 ? 4 : 2;
                     break;
                 case 0x00A1:
                     // ExA1 - SKNP Vx
                     // Skip next instruction if key with the value of Vx is not pressed.
+                    logger->debug(" -- ExA1\n");
+                    logger->debug(this->keypadToString());
+                    logger->debug("  SKNP - " + to_string((opcode & 0x0F00) >> 8) + " : " + to_string(keypad[(opcode & 0x0F00) >> 8]) + "\n");
+                    logger->debug(to_string(pc) + "\n");
                     pc += keypad[(opcode & 0x0F00) >> 8] == 0 ? 4 : 2;
+                    logger->debug(to_string(pc) + "\n");
                     break;
                 default:
                     cout << "Unhandled :( " << hex << opcode << "\n";
@@ -420,6 +431,7 @@ void Chip8::cycle() {
                 case 0x0007:
                     // Fx07 - LD Vx, DT
                     // Set Vx = delay timer value.
+                    logger->debug(" -- Fx07\n");
                     V[(opcode & 0x0F00) >> 8] = delayTimer;
                     pc += 2;
                     break;
@@ -430,24 +442,28 @@ void Chip8::cycle() {
                     // When awaiting a press, `registerAwaitingKeyPress` will hold the
                     // register index that needs the press. We'll capture this when
                     // handling the key press in `handleKeyDown`.
+                    logger->debug(" -- Fx0A\n");
                     registerAwaitingKeyPress = ((opcode & 0x0F00) >> 8);
-                    logger->debug("Awaiting key press: " + to_string(registerAwaitingKeyPress) + "\n");
+                    logger->info("Awaiting key press: " + to_string(registerAwaitingKeyPress) + "\n");
                     break;
                 case 0x0015:
                     // Fx15: - LD DT, Vx
                     // Set delay timer = Vx.
+                    logger->debug(" -- Fx15\n");
                     delayTimer = V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x0018:
                     // Fx18 - LD ST, Vx
                     // Set sound timer = Vx.
+                    logger->debug(" -- Fx18\n");
                     soundTimer = V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x001E:
                     // Fx1E - ADD I, Vx
                     // Set I = I + Vx.
+                    logger->debug(" -- Fx1E\n");
                     I += (opcode & 0x0F00) >> 8;
                     pc += 2;
                     break;
@@ -457,6 +473,7 @@ void Chip8::cycle() {
                     // The fontset is loaded as first 80 bytes, each represented
                     // value is 5 bytes long, meaning that "1" is bytes 0-4,
                     // "2" is bytes 5-9 and so on.
+                    logger->debug(" -- Fx29\n");
                     I = V[(opcode & 0x0F00) >> 8] * 0x5;
                     pc += 2;
                     break;
@@ -513,7 +530,11 @@ void Chip8::cycle() {
             break;
     }
 
-    // Execute Opcode
-
     // Update timers
+    if (delayTimer) {
+        delayTimer--;
+    }
+    if (soundTimer) {
+        soundTimer--;
+    }
 }
