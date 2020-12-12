@@ -184,14 +184,13 @@ void Chip8::cycle() {
     if (lastTimerCycleMS < 0) {
         lastTimerCycleMS = now;
     }
-    cout << lastProcessorCycleMS << " " << now << " " << ((now - lastProcessorCycleMS) * (60 / (float)1000)) << endl;
+    // cout << lastProcessorCycleMS << " " << now << " " << ((now - lastProcessorCycleMS) * (60 / (float)1000)) << endl;
     bool processOpcode = ((now - lastProcessorCycleMS) * (60 / (float)1000)) > 1;
     bool processTimers = ((now - lastTimerCycleMS) * (60 / (float)1000)) > 1;
 
     // Decode Opcode
     if (processOpcode && registerAwaitingKeyPress < 0) {
         lastProcessorCycleMS = now;
-        cout << "PROCESSING OP" << endl;
         this->handleOpcode();
     }
 
@@ -215,7 +214,6 @@ void Chip8::handleOpcode() {
                 case 0x00E0:
                     // 00E0 - CLS
                     // Clear the display.
-                    cout << 'asdf';
                     logger->debug(" -- 00E0\n");
                     this->clearDisplay();
                     pc += 2;
@@ -344,6 +342,7 @@ void Chip8::handleOpcode() {
                     // 8xy5 - SUB Vx, Vy
                     // Set Vx = Vx - Vy, set VF = NOT borrow.
                     logger->debug(" -- 8xy5\n");
+                    // if Vx > Vy, no borrow necessary, VF = 1
                     V[0xF] = V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4] ? 1 : 0;
                     V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
                     pc += 2;

@@ -6,8 +6,8 @@
 
 using namespace std;
 
-const int DEBUG_LEVEL = Logger::Levels::Info | Logger::Levels::Debug;
-// const int DEBUG_LEVEL = 0;
+// const int DEBUG_LEVEL = Logger::Levels::Info | Logger::Levels::Debug;
+const int DEBUG_LEVEL = 0;
 
 Logger* Logger::_logger = nullptr;
 
