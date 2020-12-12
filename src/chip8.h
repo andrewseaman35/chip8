@@ -6,7 +6,7 @@
 using namespace std;
 
 class Chip8 {
-private:
+protected:
     uint16_t opcode;
 
     uint8_t memory[4096]; // "The Chip-8 language is capable of accessing up to 4KB (4,096 bytes) of RAM"

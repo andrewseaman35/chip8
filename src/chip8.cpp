@@ -284,8 +284,8 @@ void Chip8::handleOpcode() {
         case 0x5000:
             // 5xy0 - SE Vx, Vy
             // Skip next instruction if Vx = Vy.
-            logger->debug(" -- 5xk0\n");
-            pc += V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F) >> 4] ? 4 : 2;
+            logger->debug(" -- 5xy0\n");
+            pc += V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4] ? 4 : 2;
             break;
         case 0x6000:
             // 6xkk - LD Vx, byte
@@ -336,8 +336,8 @@ void Chip8::handleOpcode() {
                     // 8xy4 - ADD Vx, Vy
                     // Set Vx = Vx + Vy, set VF = carry.
                     logger->debug(" -- 8xy4\n");
+                    V[0xF] = (V[(opcode & 0x0F00) >> 8] + V[(opcode & 0x00F0) >> 4]) > 0xFF ? 1 : 0;
                     V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
-                    V[0xF] = V[(opcode & 0x0F00) >> 8] > 0xFF ? 1 : 0;
                     pc += 2;
                     break;
                 case 0x0005:
