@@ -131,6 +131,6 @@ void Chip8Window::run() {
             SDL_RenderPresent(renderer);
         }
 
-        this_thread::sleep_for(chrono::microseconds(MICROSECOND_DELAY));
+        // this_thread::sleep_for(chrono::microseconds(MICROSECOND_DELAY));
     }
 }

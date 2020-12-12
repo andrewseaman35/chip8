@@ -25,8 +25,8 @@ private:
 
     int registerAwaitingKeyPress;
 
-    long long lastProcessorTime;
-    long long lastTimerTime
+    long long lastProcessorCycleMS;
+    long long lastTimerCycleMS;
 
     void clearDisplay();
     void clearStack();
@@ -58,7 +58,11 @@ private:
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
 
+    void handleOpcode();
+
 public:
+    bool requiresRerender;
+
     uint8_t displayBuffer[64*32]; // "64x32-pixel monochrome display"
     uint8_t keypad[16]; // "16-key hexadecimal keypad"
 

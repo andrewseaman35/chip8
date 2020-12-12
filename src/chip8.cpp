@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
+#include <chrono>
 
 #include "logger.h"
 #include "chip8.h"
@@ -21,6 +22,8 @@ void Chip8::init() {
     pc = INTERPRETER_SIZE;
 
     registerAwaitingKeyPress = -1;
+    lastProcessorCycleMS = -1;
+    lastTimerCycleMS = -1;
 
     this->clearDisplay();
     this->clearStack();
@@ -171,15 +174,48 @@ void Chip8::cycle() {
     // opcode is two bytes long and located at the program counter
     // shift the first byte by 8 and OR it with the following byte
     opcode = memory[pc] << 8 | memory[pc + 1];
-    // cout << "\nOPCODE: " << hex << opcode;
+    // cout << "PC: " << pc << endl;
+    // cout << endl << "OPCODE: " << hex << opcode;
+
+    long long now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+    if (lastProcessorCycleMS < 0) {
+        lastProcessorCycleMS = now;
+    }
+    if (lastTimerCycleMS < 0) {
+        lastTimerCycleMS = now;
+    }
+    cout << lastProcessorCycleMS << " " << now << " " << ((now - lastProcessorCycleMS) * (60 / (float)1000)) << endl;
+    bool processOpcode = ((now - lastProcessorCycleMS) * (60 / (float)1000)) > 1;
+    bool processTimers = ((now - lastTimerCycleMS) * (60 / (float)1000)) > 1;
 
     // Decode Opcode
+    if (processOpcode && registerAwaitingKeyPress < 0) {
+        lastProcessorCycleMS = now;
+        cout << "PROCESSING OP" << endl;
+        this->handleOpcode();
+    }
+
+    // Update timers
+    if (processTimers) {
+        lastTimerCycleMS = now;
+
+        if (delayTimer) {
+            delayTimer--;
+        }
+        if (soundTimer) {
+            soundTimer--;
+        }
+    }
+}
+
+void Chip8::handleOpcode() {
     switch(opcode & 0xF000) {
         case 0x0000:
             switch(opcode & 0x00FF) {
                 case 0x00E0:
                     // 00E0 - CLS
                     // Clear the display.
+                    cout << 'asdf';
                     logger->debug(" -- 00E0\n");
                     this->clearDisplay();
                     pc += 2;
@@ -396,6 +432,7 @@ void Chip8::cycle() {
                     }
                 }
             }
+            requiresRerender = true;
             pc += 2;
 
             this->printDisplay();
@@ -528,13 +565,5 @@ void Chip8::cycle() {
                     throw "asdf";
             }
             break;
-    }
-
-    // Update timers
-    if (delayTimer) {
-        delayTimer--;
-    }
-    if (soundTimer) {
-        soundTimer--;
     }
 }
