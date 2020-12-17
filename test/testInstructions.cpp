@@ -375,6 +375,49 @@ private:
         assertTrue(pc == 10, "bad pc");
     }
 
+    void test9xy0() {
+        printf("\n..Testing 9xy0\n");
+
+        init();
+        pc = 8;
+        V[4] = 5;
+        V[7] = 5;
+        opcode = 0x9470;
+        handleOpcode();
+
+        printf("testing Vx = Vy\n");
+        assertTrue(pc == 10, "bad pc");
+
+        init();
+        pc = 8;
+        V[4] = 5;
+        V[7] = 6;
+        opcode = 0x9470;
+        handleOpcode();
+
+        printf("testing Vx != Vy\n");
+        assertTrue(pc == 12, "bad pc");
+    }
+
+    void testAnnn() {
+        I = 8;
+        opcode = 0xA732;
+        pc = 10;
+        handleOpcode();
+
+        assertTrue(I == 0x0732, "Bad I: " + to_string(I));
+        assertTrue(pc == 12, "bad pc");
+    }
+
+    void testBnnn() {
+        V[0] = 7;
+        pc = 8;
+        opcode = 0xB812;
+        handleOpcode();
+
+        assertTrue(pc == 0x0819, "bad pc: " + to_string(pc));
+    }
+
 public:
     void run() {
         test00E0();
@@ -395,6 +438,9 @@ public:
         test8xy6();
         test8xy7();
         test8xyE();
+        test9xy0();
+        testAnnn();
+        testBnnn();
     }
 };
 
