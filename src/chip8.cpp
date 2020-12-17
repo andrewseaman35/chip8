@@ -359,8 +359,14 @@ void Chip8::handleOpcode() {
                     break;
                 case 0x0007:
                     // 8xy7 - SUBN Vy, Vy
-                    cout << "Unhandled " << hex << opcode << "\n";
-                    throw 1;
+                    // Set Vx = Vy - Vx, set VF = NOT borrow.
+                    logger->debug(" -- 8xy7\n");
+
+                    // if Vy > Vx, no borrow necessary, VF = 1
+                    V[0xF] = V[(opcode & 0x00F0) >> 4] > V[(opcode & 0x0F00) >> 8] ? 1 : 0;
+                    V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
+                    pc += 2;
+                    break;
                 case 0x000E:
                     // 8xyE - SHL Vx {, Vy}
                     // Set Vx = Vx SHL 1.
