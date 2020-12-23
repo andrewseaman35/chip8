@@ -68,7 +68,7 @@ public:
     uint8_t keypad[16]; // "16-key hexadecimal keypad"
 
     void init();
-    void load(const char *romPath);
+    bool load(const char *romPath);
     void cycle();
 
     void handleKeyDown(int key);

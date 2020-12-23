@@ -132,7 +132,7 @@ string Chip8::keypadToString() {
     return out;
 }
 
-void Chip8::load(const char *romPath) {
+bool Chip8::load(const char *romPath) {
     logger->info("Loading ROM: " + string(romPath) + "\n");
 
     this->init();
@@ -144,11 +144,13 @@ void Chip8::load(const char *romPath) {
         romFileSize = fileStat.st_size;
         logger->info("ROM File size (bytes): " + to_string(romFileSize) + "\n");
     } else {
-        throw "Error while running stat";
+        cout << "Error running stat! (file probably doesn't exist)" << endl;
+        return false;
     }
 
     if (romFileSize > (MEMORY_SIZE - INTERPRETER_SIZE)) {
-        throw "ROM too big\n";
+        cout << "ROM too big!" << endl;
+        return false;
     }
 
     // Read the file into a buffer
@@ -156,7 +158,8 @@ void Chip8::load(const char *romPath) {
     ifstream romFile(romPath, ios::in | ios::binary);
     romFile.read(romReadBuffer, romFileSize);
     if (!romFile) {
-        throw "Error reading ROM";
+        cout << "Error reading ROM" << endl;
+        return false;
     }
     romFile.close();
 
@@ -167,6 +170,7 @@ void Chip8::load(const char *romPath) {
     }
 
     logger->info("ROM loaded into memory!\n");
+    return true;
 }
 
 void Chip8::cycle() {
@@ -185,7 +189,7 @@ void Chip8::cycle() {
         lastTimerCycleMS = now;
     }
     // cout << lastProcessorCycleMS << " " << now << " " << ((now - lastProcessorCycleMS) * (60 / (float)1000)) << endl;
-    bool processOpcode = (now - lastProcessorCycleMS) > 3;
+    bool processOpcode = (now - lastProcessorCycleMS) > 2;
     bool processTimers = (now - lastTimerCycleMS) > 16;
 
     // Decode Opcode

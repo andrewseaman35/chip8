@@ -17,6 +17,8 @@ int main(int argc, char *argv[]) {
 
     Chip8 chip8 = Chip8();
     Chip8Window chip8Window = Chip8Window(&chip8, "Chip8", WINDOW_WIDTH, WINDOW_HEIGHT);
-    chip8.load(argv[1]);
+    if (!chip8.load(argv[1])) {
+        return 1;
+    }
     chip8Window.run();
 }
