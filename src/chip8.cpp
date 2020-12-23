@@ -263,7 +263,7 @@ void Chip8::handleOpcode() {
             // Call subroutine at nnn.
             stack[sp++] = pc;
             logger->debug(" -- 2nnn Add to stack: " + to_string(pc) + "\n");
-            this->printStack();
+            // this->printStack();
             pc = opcode & 0x0FFF;
             break;
         case 0x3000:
@@ -449,7 +449,7 @@ void Chip8::handleOpcode() {
             requiresRerender = true;
             pc += 2;
 
-            this->printDisplay();
+            // this->printDisplay();
             break;
         }
         case 0xE000:
