@@ -7,7 +7,7 @@
 using namespace std;
 
 // const int DEBUG_LEVEL = Logger::Levels::Info | Logger::Levels::Debug;
-const int DEBUG_LEVEL = 0;
+const int DEBUG_LEVEL = Logger::Levels::Target;
 
 Logger* Logger::_logger = nullptr;
 
@@ -46,6 +46,12 @@ void Logger::display(const char* s) {
     }
 }
 
+void Logger::target(const char* s) {
+    if (DEBUG_LEVEL & Levels::Target) {
+        this->log(s);
+    }
+}
+
 void Logger::log(string s) {
     char buffer[s.length() + 1];
     strcpy(buffer, s.c_str());
@@ -72,6 +78,12 @@ void Logger::debug(string s) {
 
 void Logger::display(string s) {
     if (DEBUG_LEVEL & Levels::Display) {
+        this->log(s);
+    }
+}
+
+void Logger::target(string s) {
+    if (DEBUG_LEVEL & Levels::Target) {
         this->log(s);
     }
 }

@@ -349,12 +349,17 @@ void Chip8::handleOpcode() {
                     break;
                 case 0x0006:
                     // 8xy6 - SHR Vx {, Vy}
-                    // Set Vx = Vx SHR 1.
+                    // Set Vx = Vy SHR 1.
                     logger->debug(" -- 8xy6\n");
 
-                    // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0.
-                    V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
-                    V[(opcode & 0x0F00) >> 8] >>= 1;
+                    // If the least-significant bit of Vy is 1, then VF is set to 1, otherwise 0.
+                    if (legacyShift) {
+                        V[0xF] = V[(opcode & 0x00F0) >> 4] & 0x1;
+                        V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] >> 1;
+                    } else {
+                        V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
+                        V[(opcode & 0x0F00) >> 8] >>= 1;
+                    }
                     pc += 2;
                     break;
                 case 0x0007:
@@ -369,11 +374,16 @@ void Chip8::handleOpcode() {
                     break;
                 case 0x000E:
                     // 8xyE - SHL Vx {, Vy}
-                    // Set Vx = Vx SHL 1.
-                    // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
+                    // Set Vx = Vy SHL 1.
+                    // If the most-significant bit of Vy is 1, then VF is set to 1, otherwise to 0.
                     logger->debug(" -- 8xyE\n");
-                    V[0xF] = V[(opcode & 0x0F00) >> 8] >> 7;
-                    V[(opcode & 0x0F00) >> 8] <<= 1;
+                    if (legacyShift) {
+                        V[0xF] = V[(opcode & 0x00F0) >> 4] >> 7;
+                        V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] << 1;
+                    } else {
+                        V[0xF] = V[(opcode & 0x0F00) >> 8] >> 7;
+                        V[(opcode & 0x0F00) >> 8] <<= 1;
+                    }
                     pc += 2;
                     break;
                 default:
@@ -446,23 +456,27 @@ void Chip8::handleOpcode() {
         case 0xE000:
             switch(opcode & 0x00FF) {
                 case 0x009E:
+                {
+
                     // Ex9E - SKP Vx
                     // Skip next instruction if key with the value of Vx is pressed.
                     logger->debug(" -- Ex9E\n");
+                    // cout << "  Looking for : " << to_string(V[(opcode & 0x0F00) >> 8]) << endl;;
                     logger->debug(this->keypadToString());
-                    logger->debug("  SKP - " + to_string((opcode & 0x0F00) >> 8) + " " + to_string(keypad[(opcode & 0x0F00) >> 8]) + "\n");
-                    pc += keypad[(opcode & 0x0F00) >> 8] == 1 ? 4 : 2;
+                    pc += keypad[V[(opcode & 0x0F00) >> 8]] == 1 ? 4 : 2;
                     break;
+                }
                 case 0x00A1:
+                {
+
                     // ExA1 - SKNP Vx
                     // Skip next instruction if key with the value of Vx is not pressed.
                     logger->debug(" -- ExA1\n");
                     logger->debug(this->keypadToString());
-                    logger->debug("  SKNP - " + to_string((opcode & 0x0F00) >> 8) + " : " + to_string(keypad[(opcode & 0x0F00) >> 8]) + "\n");
-                    logger->debug(to_string(pc) + "\n");
-                    pc += keypad[(opcode & 0x0F00) >> 8] == 0 ? 4 : 2;
-                    logger->debug(to_string(pc) + "\n");
+                    // cout << "  Looking for : " << to_string(V[(opcode & 0x0F00) >> 8]) << endl;;
+                    pc += keypad[V[(opcode & 0x0F00) >> 8]] == 0 ? 4 : 2;
                     break;
+                }
                 default:
                     cout << "Unhandled :( " << hex << opcode << "\n";
                     throw 2;
@@ -506,7 +520,7 @@ void Chip8::handleOpcode() {
                     // Fx1E - ADD I, Vx
                     // Set I = I + Vx.
                     logger->debug(" -- Fx1E\n");
-                    I += (opcode & 0x0F00) >> 8;
+                    I += V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x0029:

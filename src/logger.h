@@ -23,6 +23,7 @@ public:
         Info     = 0x02,
         Debug    = 0x04,
         Display  = 0x08,
+        Target   = 0x10,
     };
 
     // Log without level checking
@@ -33,11 +34,13 @@ public:
     void debug(const char* s);
     void error(const char* s);
     void display(const char* s);
+    void target(const char* s);
 
     void info(string s);
     void debug(string s);
     void error(string s);
     void display(string s);
+    void target(string s);
 };
 
 
