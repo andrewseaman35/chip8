@@ -199,6 +199,7 @@ void Chip8::cycle() {
         lastTimerCycleMS = now;
 
         if (delayTimer) {
+            logger->info("Delay timer decrement: " + to_string(delayTimer));
             delayTimer--;
         }
         if (soundTimer) {
@@ -214,16 +215,16 @@ void Chip8::handleOpcode() {
                 case 0x00E0:
                     // 00E0 - CLS
                     // Clear the display.
-                    logger->debug(" -- 00E0\n");
+                    logger->debug(" -- 00E0 Clear display\n");
                     this->clearDisplay();
                     pc += 2;
                     break;
                 case 0x00EE:
                     // 00EE - RET
                     // Return from a subroutine.
-                    logger->debug(" -- 00EE\n");
+                    logger->debug(" -- 00EE Return from subroutine\n");
                     pc = stack[--sp];
-                    logger->debug("Removed from stack: " + to_string(pc) + "\n");
+                    logger->debug("  Removed from stack: " + to_string(pc) + "\n");
                     pc += 2;
                     break;
                 // case 0x00C0: (super chip-48)
@@ -254,42 +255,40 @@ void Chip8::handleOpcode() {
         case 0x1000:
             // 1nnn - JP addr
             // Jump to location nnn.
-            logger->debug(" -- 1nnn\n");
             pc = opcode & 0x0FFF;
-            logger->debug("Jumping to " + to_string(pc) + "\n");
+            logger->debug(" -- 1nnn Jump to location: " + to_string(pc) + "\n");
             break;
         case 0x2000:
             // 2nnn - CALL addr
             // Call subroutine at nnn.
-            logger->debug(" -- 2nnn\n");
             stack[sp++] = pc;
-            logger->debug("Added to stack: " + to_string(pc) + "\n");
+            logger->debug(" -- 2nnn Add to stack: " + to_string(pc) + "\n");
             this->printStack();
             pc = opcode & 0x0FFF;
             break;
         case 0x3000:
             // 3xkk - SE Vx, byte
             // Skip next instruction if Vx = kk.
-            logger->debug(" -- 3xkk\n");
             pc += V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF) ? 4 : 2;
+            logger->debug(" -- 3xkk Skip if Vx == kk, pc set to " + to_string(pc) + "\n");
             break;
         case 0x4000:
             // 4xkk - SNE Vx, byte
             // Skip next instruction if Vx != kk.
-            logger->debug(" -- 4xkk\n");
             pc += V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF) ? 4 : 2;
+            logger->debug(" -- 4xkk Skip if Vx != kk, pc set to " + to_string(pc) + "\n");
             break;
         case 0x5000:
             // 5xy0 - SE Vx, Vy
             // Skip next instruction if Vx = Vy.
-            logger->debug(" -- 5xy0\n");
             pc += V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4] ? 4 : 2;
+            logger->debug(" -- 5xy0 Skip if Vx = Vy, pc set to " + to_string(pc) + "\n");
             break;
         case 0x6000:
             // 6xkk - LD Vx, byte
             // Set Vx = kk.
-            logger->debug(" -- 6xkk\n");
             V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+            logger->debug(" -- 6xkk Set Vx = kk \n");
             logger->display(this->registersToString());
             pc += 2;
             break;
@@ -505,8 +504,8 @@ void Chip8::handleOpcode() {
                 case 0x0015:
                     // Fx15: - LD DT, Vx
                     // Set delay timer = Vx.
-                    logger->debug(" -- Fx15\n");
                     delayTimer = V[(opcode & 0x0F00) >> 8];
+                    logger->debug(" -- Fx15 Set delay timer to " + to_string(delayTimer) + "\n");
                     pc += 2;
                     break;
                 case 0x0018:
