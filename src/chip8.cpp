@@ -185,8 +185,8 @@ void Chip8::cycle() {
         lastTimerCycleMS = now;
     }
     // cout << lastProcessorCycleMS << " " << now << " " << ((now - lastProcessorCycleMS) * (60 / (float)1000)) << endl;
-    bool processOpcode = ((now - lastProcessorCycleMS) * (60 / (float)1000)) > 1;
-    bool processTimers = ((now - lastTimerCycleMS) * (60 / (float)1000)) > 1;
+    bool processOpcode = (now - lastProcessorCycleMS) > 3;
+    bool processTimers = (now - lastTimerCycleMS) > 16;
 
     // Decode Opcode
     if (processOpcode && registerAwaitingKeyPress < 0) {

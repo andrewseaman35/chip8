@@ -129,8 +129,10 @@ void Chip8Window::run() {
             SDL_RenderClear(renderer);
             SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
             SDL_RenderPresent(renderer);
+            chip8->requiresRerender = false;
         }
 
-        // this_thread::sleep_for(chrono::microseconds(MICROSECOND_DELAY));
+        // system( "read -n 1 -s -p \"Press any key to continue...\"" );
+        this_thread::sleep_for(chrono::microseconds(MICROSECOND_DELAY));
     }
 }
